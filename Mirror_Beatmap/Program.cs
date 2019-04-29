@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.Server.Kestrel.Transport;
+using System.Threading;
 
 namespace Mirror_Beatmap
 {
@@ -16,6 +17,12 @@ namespace Mirror_Beatmap
     {
         public static void Main(string[] args)
         {
+
+            foreach (var file in Directory.GetFiles("cache"))
+            {
+                Nancy.Responses.PartialFileResponse.cacheInMemory.Add(file,new MemoryStream(File.ReadAllBytes(file)));
+            }
+            new Thread(()=>{ for(;;){Thread.Sleep(10000);GC.Collect(int.MaxValue,GCCollectionMode.Forced,true,false); } }) {IsBackground=true }.Start();
             Nancy.Responses.PartialFileResponse.SafePaths.Add("cache");
             CreateWebHostBuilder(args).Build().Run();
         }

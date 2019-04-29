@@ -69,50 +69,62 @@ namespace Nancy.Responses
         /// <value>A string containing the name of the file.</value>
         public string Filename { get; protected set; }
 
+        internal static Dictionary<string, Stream> cacheInMemory = new Dictionary<string, Stream>();
         private static Action<Stream> GetFileContent(string filePath, long rangeStart, long rangeEnd)
         {
             return stream =>
             {
-                using (var source = File.OpenRead(filePath))
+                Stream source;
+                if (cacheInMemory.Keys.Contains(filePath))
+                    source = cacheInMemory[filePath];
+                else
                 {
-                    if (!source.CanSeek)
-                        throw new InvalidOperationException(
-                            "Sending Range Responses requires a seekable stream eg. FileStream or MemoryStream");
+                    source = File.OpenRead(filePath);
+                    var fileBuffer= new byte[source.Length];
+                    source.Read(fileBuffer);
+                    cacheInMemory.Add(filePath, new MemoryStream(fileBuffer));
+                }
 
-                    var totalBytesToSend = rangeEnd - rangeStart + 1;
-                    var buffer = new byte[BufferSize];
-                    var bytesRemaining = totalBytesToSend;
+                source.Position = 0;
+                if (!source.CanSeek)
+                    throw new InvalidOperationException(
+                        "Sending Range Responses requires a seekable stream eg. FileStream or MemoryStream");
 
-                    source.Seek(rangeStart, SeekOrigin.Begin);
-                    while (bytesRemaining > 0)
+                var totalBytesToSend = rangeEnd - rangeStart + 1;
+                var buffer = new byte[BufferSize];
+                var bytesRemaining = totalBytesToSend;
+
+                source.Seek(rangeStart, SeekOrigin.Begin);
+                while (bytesRemaining > 0)
+                {
+                    var count = bytesRemaining <= buffer.Length
+                        ? source.Read(buffer, 0, (int)Math.Min(bytesRemaining, int.MaxValue))
+                        : source.Read(buffer, 0, buffer.Length);
+
+                    try
                     {
-                        var count = bytesRemaining <= buffer.Length
-                            ? source.Read(buffer, 0, (int)Math.Min(bytesRemaining, int.MaxValue))
-                            : source.Read(buffer, 0, buffer.Length);
-
-                        try
+                        stream.Write(buffer, 0, count);
+                        stream.Flush();
+                        bytesRemaining -= count;
+                    }
+                    catch (Exception httpException)
+                    {
+                        /* in Asp.Net we can call HttpResponseBase.IsClientConnected
+                        * to see if the client broke off the connection
+                        * and avoid trying to flush the response stream.
+                        * instead I'll swallow the exception that IIS throws in this situation
+                        * and rethrow anything else.*/
+                        if (httpException.Message
+                            == "An error occurred while communicating with the remote host. The error code is 0x80070057.")
                         {
-                            stream.Write(buffer, 0, count);
-                            stream.Flush();
-                            bytesRemaining -= count;
+                            return;
                         }
-                        catch (Exception httpException)
-                        {
-                            /* in Asp.Net we can call HttpResponseBase.IsClientConnected
-                            * to see if the client broke off the connection
-                            * and avoid trying to flush the response stream.
-                            * instead I'll swallow the exception that IIS throws in this situation
-                            * and rethrow anything else.*/
-                            if (httpException.Message
-                                == "An error occurred while communicating with the remote host. The error code is 0x80070057.")
-                            {
-                                return;
-                            }
 
-                            throw;
-                        }
+                        throw;
                     }
                 }
+                if (source is FileStream)
+                    source.Dispose();
             };
         }
 
