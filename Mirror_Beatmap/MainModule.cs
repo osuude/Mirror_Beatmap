@@ -96,7 +96,7 @@ namespace Mirror_Beatmap
                     using (var fs = File.OpenWrite($"cache/{Response.Context.Parameters.id}.jpg"))
                     using (var WebClient = new WebClient())
                     {
-                        var buffer = WebClient.DownloadData($"http://zhzi233.cn/thumb/{Response.Context.Parameters.id}.jpg");
+                        var buffer = WebClient.DownloadData($"http://b.ppy.sh/thumb/{Response.Context.Parameters.id}.jpg");
                         fs.Write(buffer);
                         fs.Close();
                     }
@@ -104,7 +104,7 @@ namespace Mirror_Beatmap
                         using (var fs = File.OpenWrite($"cache/{Response.Context.Parameters.id}l.jpg"))
                         using (var WebClient = new WebClient())
                         {
-                            var buffer = WebClient.DownloadData($"http://zhzi233.cn/thumb/{Response.Context.Parameters.id}l.jpg");
+                            var buffer = WebClient.DownloadData($"http://b.ppy.sh/thumb/{Response.Context.Parameters.id}l.jpg");
                             fs.Write(buffer);
                             fs.Close();
                         }
