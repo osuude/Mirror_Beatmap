@@ -20,9 +20,13 @@ namespace Mirror_Beatmap
 
             foreach (var file in Directory.GetFiles("cache"))
             {
-                Nancy.Responses.PartialFileResponse.cacheInMemory.Add(file,new MemoryStream(File.ReadAllBytes(file)));
+                var fileContent = File.ReadAllBytes(file);
+                if (fileContent.Length < 10)
+                    File.Delete($"cache/{file}");
+                else
+                    Nancy.Responses.PartialFileResponse.cacheInMemory.Add(file, new MemoryStream(fileContent));
             }
-            new Thread(()=>{ for(;;){Thread.Sleep(10000);GC.Collect(int.MaxValue,GCCollectionMode.Forced,true,false); } }) {IsBackground=true }.Start();
+            new Thread(() => { for (; ; ) { Thread.Sleep(10000); GC.Collect(int.MaxValue, GCCollectionMode.Forced, true, false); } }) { IsBackground = true }.Start();
             Nancy.Responses.PartialFileResponse.SafePaths.Add("cache");
             CreateWebHostBuilder(args).Build().Run();
         }
