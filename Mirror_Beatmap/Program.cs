@@ -1,49 +1,45 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Net;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Microsoft.AspNetCore.Server.Kestrel.Transport;
-using System.Threading;
 
-namespace Mirror_Beatmap
+namespace MirrorBeatmap
 {
-    public class Program
+    public static class Program
     {
+        internal static Dictionary<string, MemoryStream> MemoryCache = new Dictionary<string, MemoryStream>();
         public static void Main(string[] args)
         {
-
-            foreach (var file in Directory.GetFiles("cache"))
+            if (!Directory.Exists("cache"))
+                Directory.CreateDirectory("cache");
+            Array.ForEach(Directory.GetFiles("cache"), file =>
             {
-                var fileContent = File.ReadAllBytes(file);
-                if (fileContent.Length < 10)
-                    File.Delete($"cache/{file}");
-                else
-                    Nancy.Responses.PartialFileResponse.cacheInMemory.Add(file, new MemoryStream(fileContent));
-            }
-            new Thread(() => { for (; ; ) { Thread.Sleep(10000); GC.Collect(int.MaxValue, GCCollectionMode.Forced, true, false); } }) { IsBackground = true }.Start();
-            Nancy.Responses.PartialFileResponse.SafePaths.Add("cache");
-            CreateWebHostBuilder(args).Build().Run();
+                var fs = File.OpenRead(file);
+                if (fs.Length < 1)
+                {
+                    File.Delete(file);
+                    return;
+                }
+
+                var ms = new MemoryStream();
+                fs.CopyTo(ms);
+               
+                MemoryCache.Add(Path.GetFileName(file), ms);
+            });
+
+            CreateHostBuilder(args).Build().Run();
         }
 
-        public static IWebHostBuilder CreateWebHostBuilder(string[] args) =>
-            WebHost.CreateDefaultBuilder(args)
-                .UseStartup<Startup>()
-                //.UseLibuv()
-                .UseKestrel(options =>
+        public static IHostBuilder CreateHostBuilder(string[] args) =>
+            Host.CreateDefaultBuilder(args)
+                .ConfigureWebHostDefaults(webBuilder =>
                 {
-                    //options.ListenUnixSocket("/dev/shm/asp.netcore.sock");
-                    options.ListenLocalhost(9999, configure =>
-                    {
-                        //configure.UseHttps("dev.zhzi233.cn.pfx", File.ReadAllText("keystorePass.txt"));
-                        configure.Protocols = Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols.Http1AndHttp2;
-                    });
-                })
-            ;
+                    webBuilder.UseStartup<Startup>();
+                });
     }
 }

@@ -340,3 +340,4 @@ ASALocalRun/
 healthchecksdb
 /Mirror_Beatmap/cache
 /Mirror_Beatmap/keystorePass.txt
+/Mirror_Beatmap_Old/cache

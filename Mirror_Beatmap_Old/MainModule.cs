@@ -15,13 +15,13 @@ namespace Mirror_Beatmap
 {
     public class MainModule : NancyModule
     {
-        
+
         public MainModule()
         {
 
             Get("/", args =>
             {
-                return Html("<h1>Welcome to beatmap mirror of osu!ude</h1>" + Environment.CurrentDirectory);
+                return Html($"<h1>Welcome to beatmap mirror of osu!ude</h1>{Environment.CurrentDirectory}");
             });
 
 
@@ -33,12 +33,12 @@ namespace Mirror_Beatmap
                          return new PartialFileResponse($"{args.id}.jpg", "image/jpeg", Context);
 
                      DownloadPreviewPicture();
-
-                     return Response.AsRedirect($"https://b.ppy.sh/thumb/{args.id}.jpg", RedirectResponse.RedirectType.Permanent);
+                     DownloadPreviewSound();
+                     return Response.AsRedirect($"http://b.ppy.sh/thumb/{args.id}.jpg", RedirectResponse.RedirectType.Permanent);
                  }
                  catch
                  {
-                     return Response.AsRedirect($"https://b.ppy.sh/thumb/{args.id}.jpg", RedirectResponse.RedirectType.Permanent);
+                     return Response.AsRedirect($"http://b.ppy.sh/thumb/{args.id}.jpg", RedirectResponse.RedirectType.Permanent);
                  }
              });
 
@@ -74,6 +74,7 @@ namespace Mirror_Beatmap
             {
                 try
                 {
+
                     using (var fs = File.OpenWrite($"cache/{Response.Context.Parameters.id}.mp3"))
                     using (var WebClient = new WebClient())
                     {
@@ -82,7 +83,10 @@ namespace Mirror_Beatmap
                         fs.Close();
                     }
                 }
-                catch { }
+                catch 
+                {
+                    File.Delete($"cache/{Response.Context.Parameters.id}.mp3");
+                }
             })
             { IsBackground = true }.Start();
         }
@@ -96,7 +100,7 @@ namespace Mirror_Beatmap
                     using (var fs = File.OpenWrite($"cache/{Response.Context.Parameters.id}.jpg"))
                     using (var WebClient = new WebClient())
                     {
-                        var buffer = WebClient.DownloadData($"http://b.ppy.sh/thumb/{Response.Context.Parameters.id}.jpg");
+                        var buffer = WebClient.DownloadData($"https://b.ppy.sh/thumb/{Response.Context.Parameters.id}.jpg");
                         fs.Write(buffer);
                         fs.Close();
                     }
@@ -104,12 +108,16 @@ namespace Mirror_Beatmap
                         using (var fs = File.OpenWrite($"cache/{Response.Context.Parameters.id}l.jpg"))
                         using (var WebClient = new WebClient())
                         {
-                            var buffer = WebClient.DownloadData($"http://b.ppy.sh/thumb/{Response.Context.Parameters.id}l.jpg");
+                            var buffer = WebClient.DownloadData($"https://b.ppy.sh/thumb/{Response.Context.Parameters.id}l.jpg");
                             fs.Write(buffer);
                             fs.Close();
                         }
                 }
-                catch { }
+                catch 
+                {
+                    File.Delete($"cache/{Response.Context.Parameters.id}.jpg");
+                    File.Delete($"cache/{Response.Context.Parameters.id}l.jpg");
+                }
             })
             { IsBackground = true }.Start();
         }
