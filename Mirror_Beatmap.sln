@@ -3,16 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.28803.202
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nancy", "Nancy\src\Nancy\Nancy.csproj", "{32A92DDF-D5D1-4D04-82C0-D4880D10A06C}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Mirror_Beatmap_Old", "Mirror_Beatmap_Old\Mirror_Beatmap_Old.csproj", "{F62D2E7F-3FF3-460D-A118-9EB920D031AB}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MirrorBeatmap", "Mirror_Beatmap\MirrorBeatmap.csproj", "{386D311C-2FF1-4DA9-A72E-2609CFB786B9}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{17D472A4-2B39-4053-BE4A-4E62D2F42847}"
-	ProjectSection(SolutionItems) = preProject
-		.editorconfig = .editorconfig
-	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -22,18 +13,6 @@ Global
 		Release|x64 = Release|x64
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{32A92DDF-D5D1-4D04-82C0-D4880D10A06C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{32A92DDF-D5D1-4D04-82C0-D4880D10A06C}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{32A92DDF-D5D1-4D04-82C0-D4880D10A06C}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{32A92DDF-D5D1-4D04-82C0-D4880D10A06C}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{32A92DDF-D5D1-4D04-82C0-D4880D10A06C}.Release|Any CPU.Build.0 = Release|Any CPU
-		{32A92DDF-D5D1-4D04-82C0-D4880D10A06C}.Release|x64.ActiveCfg = Release|Any CPU
-		{F62D2E7F-3FF3-460D-A118-9EB920D031AB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{F62D2E7F-3FF3-460D-A118-9EB920D031AB}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{F62D2E7F-3FF3-460D-A118-9EB920D031AB}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{F62D2E7F-3FF3-460D-A118-9EB920D031AB}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{F62D2E7F-3FF3-460D-A118-9EB920D031AB}.Release|Any CPU.Build.0 = Release|Any CPU
-		{F62D2E7F-3FF3-460D-A118-9EB920D031AB}.Release|x64.ActiveCfg = Release|Any CPU
 		{386D311C-2FF1-4DA9-A72E-2609CFB786B9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{386D311C-2FF1-4DA9-A72E-2609CFB786B9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{386D311C-2FF1-4DA9-A72E-2609CFB786B9}.Debug|x64.ActiveCfg = Debug|x64
