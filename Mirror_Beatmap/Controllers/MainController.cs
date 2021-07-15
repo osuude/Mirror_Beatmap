@@ -43,9 +43,7 @@ namespace MirrorBeatmap.Controllers
                 var buffer = redis.Get(thumbFileName);
                 if (buffer != null)
                 {
-                    var ms = new MemoryStream(buffer);
-                    return File(ms, "image/jpeg", true);
-
+                    return File(buffer, "image/jpeg", true);
                 }
                 DownloadPreviewPictureAsync(id);
                 DownloadPreviewSoundAsync(id);
@@ -67,9 +65,7 @@ namespace MirrorBeatmap.Controllers
                 var buffer = redis.Get(previewFilename);
                 if (buffer != null)
                 {
-                    var ms = new MemoryStream(buffer);
-                    return File(ms, "audio/mpeg", true);
-
+                    return File(buffer, "audio/mpeg", true);
                 }
 
                 DownloadPreviewSoundAsync(id);
