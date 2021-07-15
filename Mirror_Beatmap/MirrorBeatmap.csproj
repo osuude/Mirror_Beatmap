@@ -32,4 +32,10 @@
     <PackageReference Include="CSRedisCore" Version="3.6.6" />
   </ItemGroup>
 
+  <PropertyGroup>
+    <PublishTrimmed>true</PublishTrimmed>
+    <TrimMode>link</TrimMode>
+    <SuppressTrimAnalysisWarnings>false</SuppressTrimAnalysisWarnings>
+  </PropertyGroup>
+
 </Project>
