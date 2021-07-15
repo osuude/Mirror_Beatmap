@@ -1,8 +1,12 @@
 ﻿using System;
 using System.IO;
+using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using CSRedis;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.Extensions.Caching.Redis;
 using Microsoft.Extensions.Logging;
 
 namespace MirrorBeatmap.Controllers
@@ -11,6 +15,14 @@ namespace MirrorBeatmap.Controllers
     [Route("/")]
     public class MainController : ControllerBase
     {
+        private readonly IDistributedCache redis;
+
+        public MainController(IDistributedCache redis)
+        {
+            this.redis = redis;
+        }
+
+
         [HttpGet]//根目录首页
         public ContentResult Get()
         {
@@ -27,12 +39,11 @@ namespace MirrorBeatmap.Controllers
         {
             try
             {
-                if (Program.MemoryCache.ContainsKey($"{id}.jpg"))
+                var thumbFileName = $"{id}.jpg";
+                var buffer = redis.Get(thumbFileName);
+                if (buffer != null)
                 {
-                    var ms = new MemoryStream();
-                    Program.MemoryCache[$"{id}.jpg"].Seek(0, SeekOrigin.Begin);
-                    await Program.MemoryCache[$"{id}.jpg"].CopyToAsync(ms);
-                    ms.Seek(0, SeekOrigin.Begin);
+                    var ms = new MemoryStream(buffer);
                     return File(ms, "image/jpeg", true);
 
                 }
@@ -52,12 +63,11 @@ namespace MirrorBeatmap.Controllers
         {
             try
             {
-                if (Program.MemoryCache.ContainsKey($"{id}.mp3"))
+                var previewFilename = $"{id}.mp3";
+                var buffer = redis.Get(previewFilename);
+                if (buffer != null)
                 {
-                    var ms = new MemoryStream();
-                    Program.MemoryCache[$"{id}.mp3"].Seek(0, SeekOrigin.Begin);
-                    Program.MemoryCache[$"{id}.mp3"].CopyTo(ms);
-                    ms.Seek(0, SeekOrigin.Begin);
+                    var ms = new MemoryStream(buffer);
                     return File(ms, "audio/mpeg", true);
 
                 }
@@ -72,62 +82,53 @@ namespace MirrorBeatmap.Controllers
             }
         }
 
-        private async void DownloadPreviewSoundAsync(string id)
+        private async Task DownloadPreviewSoundAsync(string id)
         {
-            if (System.IO.File.Exists($"cache/{id}l.jpg"))
+            var previewFilename = $"{id}.mp3";
+            if (await redis.GetAsync(previewFilename) != null)
                 return;
             try
             {
-                using (var fs = System.IO.File.OpenWrite($"cache/{id}.mp3"))
-                using (var WebClient = new System.Net.WebClient())
-                {
-                    var buffer = await WebClient.DownloadDataTaskAsync($"https://cdnx.sayobot.cn:25225/preview/{id}.mp3");
-                    await fs.WriteAsync(buffer);
-                    fs.Close();
-                    if (!Program.MemoryCache.ContainsKey($"{id}.mp3"))
-                        Program.MemoryCache.Add($"{id}.mp3", new MemoryStream(buffer));
-                }
+                using var httpclient = new HttpClient();
+
+                httpclient.DefaultRequestHeaders.Add("User-Agent", "osu!ude");
+                httpclient.DefaultRequestHeaders.Add("Referrer", "https://osu.zhzi233.cn");
+                var buffer = await httpclient.GetByteArrayAsync("https://cdnx.sayobot.cn:25225/preview/" + previewFilename);
+                await redis.SetAsync(previewFilename, buffer);
             }
             catch
             {
-                System.IO.File.Delete($"cache/{id}.mp3");
+                _ = redis.RemoveAsync(previewFilename);
             }
 
         }
 
-        private async void DownloadPreviewPictureAsync(string id)
+        private async Task DownloadPreviewPictureAsync(string id)
         {
             try
             {
-                if (System.IO.File.Exists($"cache/{id}.jpg"))
+                var thumbFileName = id + ".jpg";
+
+                if (redis.Get(thumbFileName) != null)
                     return;
-                using (var fs = System.IO.File.OpenWrite($"cache/{id}.jpg"))
-                using (var WebClient = new System.Net.WebClient())
+                do
                 {
-                    var buffer =
-                        await WebClient.DownloadDataTaskAsync($"https://b.ppy.sh/thumb/{id}.jpg");
-                    await fs.WriteAsync(buffer);
-                    fs.Close();
-                    if (!Program.MemoryCache.ContainsKey($"{id}.jpg"))
-                        Program.MemoryCache.Add($"{id}.jpg", new MemoryStream(buffer));
-                }
-                if (System.IO.File.Exists($"cache/{id}l.jpg"))
-                    return;
-                if (!id.EndsWith('l'))
-                    using (var fs = System.IO.File.OpenWrite($"cache/{id}l.jpg"))
-                    using (var WebClient = new System.Net.WebClient())
+                    using (var httpClient = new HttpClient())
                     {
-                        var buffer = WebClient.DownloadData($"https://b.ppy.sh/thumb/{id}l.jpg");
-                        fs.Write(buffer);
-                        fs.Close();
-                        if (!Program.MemoryCache.ContainsKey($"{id}l.jpg"))
-                            Program.MemoryCache.Add($"{id}l.jpg", new MemoryStream(buffer));
+                        var buffer =
+                            await httpClient.GetByteArrayAsync($"https://b.ppy.sh/thumb/{id}.jpg");
+                        redis.Set(thumbFileName, buffer);
                     }
+                    if (id.EndsWith('l') && redis.Get(id + "l.jpg") != null)
+                        return;
+                    thumbFileName = id + "l.jpg";
+                }
+                while (true);
             }
             catch
             {
-                System.IO.File.Delete($"cache/{id}.jpg");
-                System.IO.File.Delete($"cache/{id}l.jpg");
+                _ = redis.RemoveAsync($"{id}.jpg");
+                _ = redis.RemoveAsync($"{id}l.jpg");
             }
 
         }
