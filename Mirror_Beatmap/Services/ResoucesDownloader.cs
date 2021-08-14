@@ -76,11 +76,11 @@ public class ResoucesDownloader : IResourcesDownloader
 
     public void DownloadPreview(string filename)
     {
-        ThumbDownloadQueue.Enqueue(filename);
+        PreviewDownloadQueue.Enqueue(filename);
     }
 
     public void DownloadThumb(string filename)
     {
-        PreviewDownloadQueue.Enqueue(filename);
+        ThumbDownloadQueue.Enqueue(filename);
     }
 }
