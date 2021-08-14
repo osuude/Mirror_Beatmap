@@ -98,6 +98,9 @@ namespace MirrorBeatmap.Controllers
 
         private void DownloadThumbAsync(string id)
         {
+            if (!id.EndsWith('l'))
+                DownloadThumbAsync(id + 'l');
+
             var thumbFileName = id + ".jpg";
             if (resourcesDownloader.ThumbDownloadQueue.Contains(thumbFileName))
                 return;
