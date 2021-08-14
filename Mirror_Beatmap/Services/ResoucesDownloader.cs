@@ -53,7 +53,7 @@ public class ResoucesDownloader : IResourcesDownloader
     {
         while (true)
         {
-            if (ThumbDownloadQueue.TryDequeue(out var _filename))
+            if (PreviewDownloadQueue.TryDequeue(out var _filename))
             {
                 try
                 {
