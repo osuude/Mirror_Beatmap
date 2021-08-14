@@ -15,6 +15,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using MirrorBeatmap.Services;
+using MirrorBeatmap.Services.Interfaces;
 
 namespace MirrorBeatmap
 {
@@ -38,6 +40,7 @@ namespace MirrorBeatmap
             var rc = new CSRedisClient(Configuration.GetConnectionString("Redis"));
             RedisHelper.Initialization(rc);
             services.AddSingleton<IDistributedCache>(new CSRedisCache(RedisHelper.Instance));
+            services.AddSingleton<IResourcesDownloader, ResoucesDownloader>();
 
             services.AddControllers();
         }

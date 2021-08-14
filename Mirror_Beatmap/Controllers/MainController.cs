@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.IO;
 using System.Net.Http;
 using System.Threading;
@@ -8,6 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Caching.Redis;
 using Microsoft.Extensions.Logging;
+using MirrorBeatmap.Services.Interfaces;
 
 namespace MirrorBeatmap.Controllers
 {
@@ -15,11 +17,18 @@ namespace MirrorBeatmap.Controllers
     [Route("/")]
     public class MainController : ControllerBase
     {
-        private readonly IDistributedCache redis;
 
-        public MainController(IDistributedCache redis)
+        static ConcurrentQueue<string> _thumbDownloadQueue = new ConcurrentQueue<string>();
+        static ConcurrentQueue<string> _previewDownloadQueue = new ConcurrentQueue<string>();
+
+
+        private readonly IDistributedCache redis;
+        private readonly IResourcesDownloader resourcesDownloader;
+
+        public MainController(IDistributedCache redis, IResourcesDownloader resourcesDownloader)
         {
             this.redis = redis;
+            this.resourcesDownloader = resourcesDownloader;
         }
 
 
@@ -30,7 +39,7 @@ namespace MirrorBeatmap.Controllers
             {
                 ContentType = "text/html",
                 StatusCode = 200,
-                Content = $"<h1>Welcome to beatmap mirror of osu!ude</h1>{Environment.CurrentDirectory}"
+                Content = "<h1>Welcome to beatmap mirror of osu!ude</h1>"
             };
         }
 
@@ -40,13 +49,13 @@ namespace MirrorBeatmap.Controllers
             try
             {
                 var thumbFileName = $"{id}.jpg";
-                var buffer = redis.Get(thumbFileName);
+                var buffer = await redis.GetAsync(thumbFileName);
                 if (buffer != null)
                 {
                     return File(buffer, "image/jpeg", true);
                 }
-                DownloadPreviewPictureAsync(id);
-                DownloadPreviewSoundAsync(id);
+                DownloadThumbAsync(id);
+                DownloadPreview(id);
 
                 return Redirect($"http://b.ppy.sh/thumb/{id}.jpg");
             }
@@ -57,18 +66,18 @@ namespace MirrorBeatmap.Controllers
         }
 
         [HttpGet("/preview/{id}.mp3")]
-        public dynamic Preview(string id)
+        public async Task<dynamic> Preview(string id)
         {
             try
             {
                 var previewFilename = $"{id}.mp3";
-                var buffer = redis.Get(previewFilename);
+                var buffer = await redis.GetAsync(previewFilename);
                 if (buffer != null)
                 {
                     return File(buffer, "audio/mpeg", true);
                 }
 
-                DownloadPreviewSoundAsync(id);
+                DownloadPreview(id);
 
                 return Redirect($"https://cdnx.sayobot.cn:25225/preview/{id}.mp3");
             }
@@ -78,54 +87,21 @@ namespace MirrorBeatmap.Controllers
             }
         }
 
-        private async Task DownloadPreviewSoundAsync(string id)
+        private void DownloadPreview(string id)
         {
             var previewFilename = $"{id}.mp3";
-            if (await redis.GetAsync(previewFilename) != null)
+            if (resourcesDownloader.PreviewDownloadQueue.Contains(previewFilename))
                 return;
-            try
-            {
-                using var httpclient = new HttpClient();
-
-                httpclient.DefaultRequestHeaders.Add("User-Agent", "osu!ude");
-                httpclient.DefaultRequestHeaders.Add("Referrer", "https://osu.zhzi233.cn");
-                var buffer = await httpclient.GetByteArrayAsync("https://cdnx.sayobot.cn:25225/preview/" + previewFilename);
-                await redis.SetAsync(previewFilename, buffer);
-            }
-            catch
-            {
-                _ = redis.RemoveAsync(previewFilename);
-            }
+            resourcesDownloader.DownloadPreview(previewFilename);
 
         }
 
-        private async Task DownloadPreviewPictureAsync(string id)
+        private void DownloadThumbAsync(string id)
         {
-            try
-            {
-                var thumbFileName = id + ".jpg";
-
-                if (redis.Get(thumbFileName) != null)
-                    return;
-                do
-                {
-                    using (var httpClient = new HttpClient())
-                    {
-                        var buffer =
-                            await httpClient.GetByteArrayAsync($"https://b.ppy.sh/thumb/{id}.jpg");
-                        redis.Set(thumbFileName, buffer);
-                    }
-                    if (id.EndsWith('l') && redis.Get(id + "l.jpg") != null)
-                        return;
-                    thumbFileName = id + "l.jpg";
-                }
-                while (true);
-            }
-            catch
-            {
-                _ = redis.RemoveAsync($"{id}.jpg");
-                _ = redis.RemoveAsync($"{id}l.jpg");
-            }
+            var thumbFileName = id + ".jpg";
+            if (resourcesDownloader.ThumbDownloadQueue.Contains(thumbFileName))
+                return;
+            resourcesDownloader.DownloadThumb(thumbFileName);
 
         }
     }

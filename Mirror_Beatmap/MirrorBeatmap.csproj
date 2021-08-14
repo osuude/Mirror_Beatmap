@@ -5,7 +5,7 @@
     <TrimUnusedDependencies>true</TrimUnusedDependencies>
     <RootPackageReference>false</RootPackageReference>
     <AssemblyName>MirrorBeatmap</AssemblyName>
-    <Platforms>x64</Platforms>
+    <Platforms>x64;AnyCPU</Platforms>
     <NeutralLanguage>zh-Hans-CN</NeutralLanguage>
     
   </PropertyGroup>
