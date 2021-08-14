@@ -35,7 +35,7 @@ public class ResoucesDownloader : IResourcesDownloader
                 try
                 {
 
-                    var buffer = await thumbHttpClient.GetByteArrayAsync("https://b.ppy.sh/thumb/{id}.jpg" + _filename);
+                    var buffer = await thumbHttpClient.GetByteArrayAsync("https://b.ppy.sh/thumb/" + _filename);
                     await redis.SetAsync(_filename, buffer);
                 }
                 catch (Exception e)
